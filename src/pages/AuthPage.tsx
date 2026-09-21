@@ -56,7 +56,7 @@ export function AuthPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
       <div className="flex flex-1 flex-col justify-center p-6">
         <div className="mb-8 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-600 text-white">

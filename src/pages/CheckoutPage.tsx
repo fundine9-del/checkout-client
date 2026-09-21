@@ -36,7 +36,7 @@ export function CheckoutPage({ order, onBack, onPaid }: CheckoutPageProps) {
   const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0)
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
       <header className="flex items-center gap-3 bg-white px-4 py-4 shadow-sm">
         <button onClick={onBack} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">
           <ArrowLeft className="h-5 w-5" />

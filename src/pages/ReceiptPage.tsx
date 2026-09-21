@@ -10,7 +10,7 @@ const METHOD_LABELS: Record<string, string> = {
 
 export function ReceiptPage({ receipt, onHome }: { receipt: Receipt; onHome: () => void }) {
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
       <header className="bg-white px-5 py-4 shadow-sm">
         <h1 className="text-lg font-semibold text-slate-900">Receipt</h1>
       </header>

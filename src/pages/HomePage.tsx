@@ -57,7 +57,7 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen }: HomePagePro
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
       <header className="flex items-center gap-3 bg-white px-5 py-4 shadow-sm">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white">
           <ShoppingBasket className="h-5 w-5" />

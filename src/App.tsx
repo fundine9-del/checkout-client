@@ -28,7 +28,7 @@ function Root() {
   const { session, loading } = useAuth()
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-slate-50">
+      <div className="mx-auto flex min-h-screen max-w-2xl items-center justify-center bg-slate-50">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
       </div>
     )

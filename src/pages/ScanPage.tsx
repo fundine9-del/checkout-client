@@ -165,13 +165,13 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
     }
   }, [mode, addBarcode])
 
-  const itemCount = order?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0
+  const itemCount = (order?.items ?? []).reduce((sum, i) => sum + i.quantity, 0)
   const total = order?.total ?? 0
   const showCamera =
     mode === 'camera' && (cameraState === 'on' || cameraState === 'starting')
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-950">
+    <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-950">
       <header className="flex items-center justify-between px-4 py-4 text-white">
         <h1 className="text-lg font-semibold">Scan items</h1>
         <button
@@ -207,7 +207,7 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
 
       <main className="flex-1">
         {showCamera ? (
-          <div className="relative aspect-[3/4] w-full bg-black">
+          <div className="relative mx-auto aspect-[3/4] w-full max-h-[55vh] bg-black">
             <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="h-64 w-64 rounded-2xl border-2 border-teal-400/70" />
