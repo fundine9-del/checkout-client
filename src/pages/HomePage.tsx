@@ -11,18 +11,19 @@ import {
   X,
 } from 'lucide-react'
 import { api } from '../lib/api'
-import { formatDateTime, shortId } from '../lib/format'
-import { getCurrentStore, setCurrentStore, type SelectedStore } from '../lib/store'
-import type { Order, OrderWithItems, Store } from '../lib/types'
+import { formatDateTime, formatMoney, shortId } from '../lib/format'
+import { getCurrentStore, getLastReceipt, setCurrentStore, type SelectedStore } from '../lib/store'
+import type { Order, OrderWithItems, Receipt, Store } from '../lib/types'
 
 interface HomePageProps {
   userName: string
   onSignOut: () => void
   onCreated: (order: OrderWithItems) => void
   onOpen: (orderId: string) => void
+  onShowReceipt: (receipt: Receipt) => void
 }
 
-export function HomePage({ userName, onSignOut, onCreated, onOpen }: HomePageProps) {
+export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt }: HomePageProps) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -107,6 +108,7 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen }: HomePagePro
   const visibleOrders = currentStore
     ? orders.filter((o) => o.store_id === currentStore.id)
     : orders
+  const lastReceipt = getLastReceipt()
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
@@ -164,6 +166,22 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen }: HomePagePro
           </div>
         ) : (
           <>
+            {lastReceipt && (
+              <button
+                onClick={() => onShowReceipt(lastReceipt)}
+                className="mb-6 flex w-full items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-left ring-1 ring-emerald-200 transition hover:ring-emerald-400"
+              >
+                <ReceiptText className="h-6 w-6 shrink-0 text-emerald-600" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-emerald-800">Last receipt</p>
+                  <p className="truncate text-xs text-emerald-600">
+                    {lastReceipt.items.length} item(s) · {formatMoney(lastReceipt.total)} ·{' '}
+                    {formatDateTime(lastReceipt.paid_at)}
+                  </p>
+                </div>
+                <ChevronRight className="h-4 w-4 shrink-0 text-emerald-400" />
+              </button>
+            )}
             <h2 className="text-sm font-medium text-slate-500">Open checks</h2>
             {visibleOrders.length === 0 ? (
               <div className="mt-4 rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">

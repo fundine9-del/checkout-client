@@ -71,6 +71,10 @@ export const api = {
     return req<{ order: OrderWithItems }>(`/orders/${orderId}`)
   },
 
+  fetchReceipt(orderId: string) {
+    return req<{ receipt: Receipt }>(`/orders/${orderId}/receipt`)
+  },
+
   addItem(orderId: string, barcode: string, quantity = 1) {
     return req<{ order: OrderWithItems }>(`/orders/${orderId}/items`, {
       method: 'POST',

@@ -33,6 +33,8 @@ export interface ReceiptLine {
 }
 
 export interface Receipt {
+  store_name?: string | null
+  customer_name?: string | null
   order_id: string
   payment_method: string
   total: number

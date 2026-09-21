@@ -1,4 +1,7 @@
+import type { Receipt } from './types'
+
 const KEY = 'checkout.current-store'
+const RECEIPT_KEY = 'checkout.last-receipt'
 
 export interface SelectedStore {
   id: string
@@ -26,5 +29,28 @@ export function setCurrentStore(store: SelectedStore | null): void {
     else localStorage.removeItem(KEY)
   } catch {
     // storage unavailable — selection just won't persist
+  }
+}
+
+/** Keeps the most recent receipt so it can be viewed/printed again after a refresh. */
+export function saveLastReceipt(receipt: Receipt): void {
+  try {
+    localStorage.setItem(RECEIPT_KEY, JSON.stringify(receipt))
+  } catch {
+    // storage unavailable — the receipt just won't survive a refresh
+  }
+}
+
+export function getLastReceipt(): Receipt | null {
+  try {
+    const raw = localStorage.getItem(RECEIPT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Receipt
+    if (parsed && typeof parsed.order_id === 'string' && Array.isArray(parsed.items)) {
+      return parsed
+    }
+    return null
+  } catch {
+    return null
   }
 }

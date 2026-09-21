@@ -7,6 +7,7 @@ import { ScanPage } from './pages/ScanPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { ReceiptPage } from './pages/ReceiptPage'
 import type { OrderWithItems, Receipt } from './lib/types'
+import { saveLastReceipt } from './lib/store'
 
 type View =
   | { name: 'home' }
@@ -50,6 +51,7 @@ function CheckoutFlow() {
           onSignOut={() => void signOut()}
           onCreated={(order) => setView({ name: 'cart', orderId: order.id, initial: order })}
           onOpen={(orderId) => setView({ name: 'cart', orderId, initial: null })}
+          onShowReceipt={(receipt) => setView({ name: 'receipt', receipt })}
         />
       )
 
@@ -82,7 +84,10 @@ function CheckoutFlow() {
         <CheckoutPage
           order={view.initial}
           onBack={() => setView({ name: 'cart', orderId: view.orderId, initial: view.initial })}
-          onPaid={(receipt) => setView({ name: 'receipt', receipt })}
+          onPaid={(receipt) => {
+            saveLastReceipt(receipt)
+            setView({ name: 'receipt', receipt })
+          }}
         />
       )
 
