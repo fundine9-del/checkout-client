@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronRight, Plus, ReceiptText, RefreshCw, ShoppingBasket, X } from 'lucide-react'
+import { ChevronRight, LogOut, Plus, ReceiptText, RefreshCw, ShoppingBasket, X } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatDateTime, shortId } from '../lib/format'
 import type { Order, OrderWithItems } from '../lib/types'
 
 interface HomePageProps {
+  userName: string
+  onSignOut: () => void
   onCreated: (order: OrderWithItems) => void
   onOpen: (orderId: string) => void
 }
 
-export function HomePage({ onCreated, onOpen }: HomePageProps) {
+export function HomePage({ userName, onSignOut, onCreated, onOpen }: HomePageProps) {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // "New checkout" modal state
+  // "New checkout" modal state. Customer name defaults to the signed-in
+  // shopper so receipts carry the person who made the purchase.
   const [modalOpen, setModalOpen] = useState(false)
-  const [name, setName] = useState('')
+  const [name, setName] = useState(userName)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
@@ -59,10 +62,20 @@ export function HomePage({ onCreated, onOpen }: HomePageProps) {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white">
           <ShoppingBasket className="h-5 w-5" />
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <h1 className="text-lg font-semibold text-slate-900">Check Out</h1>
-          <p className="text-xs text-slate-500">Scan, pay and go.</p>
+          <p className="truncate text-xs text-slate-500">
+            {userName ? `Hi, ${userName}` : 'Scan, pay and go.'}
+          </p>
         </div>
+        <button
+          onClick={onSignOut}
+          title="Sign out"
+          className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign out
+        </button>
       </header>
 
       <main className="flex-1 p-5">

@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { CartPage } from './pages/CartPage'
 import { ScanPage } from './pages/ScanPage'
@@ -14,12 +16,38 @@ type View =
   | { name: 'receipt'; receipt: Receipt }
 
 export default function App() {
+  return (
+    <AuthProvider>
+      <Root />
+    </AuthProvider>
+  )
+}
+
+/** Decides what to show while auth state loads / is resolved. */
+function Root() {
+  const { session, loading } = useAuth()
+  if (loading) {
+    return (
+      <div className="mx-auto flex min-h-screen max-w-md items-center justify-center bg-slate-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-teal-600 border-t-transparent" />
+      </div>
+    )
+  }
+  if (!session) return <AuthPage />
+  return <CheckoutFlow />
+}
+
+/** The checkout flow, reachable only while signed in. */
+function CheckoutFlow() {
+  const { session, displayName, signOut } = useAuth()
   const [view, setView] = useState<View>({ name: 'home' })
 
   switch (view.name) {
     case 'home':
       return (
         <HomePage
+          userName={displayName || session?.user.email || ''}
+          onSignOut={() => void signOut()}
           onCreated={(order) => setView({ name: 'cart', orderId: order.id, initial: order })}
           onOpen={(orderId) => setView({ name: 'cart', orderId, initial: null })}
         />

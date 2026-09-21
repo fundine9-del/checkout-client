@@ -1,11 +1,12 @@
 # Check Out — Customer Webapp
 
 Browser version of the customer checkout flow (what the Flutter app does on
-phones): open a checkout, **scan barcodes**, adjust quantities, and pay —
-simulated — then get a receipt.
+phones): sign in, open a checkout, **scan barcodes**, adjust quantities, and
+pay — simulated — then get a receipt.
 
-No sign-in needed. The app talks to the **checkout server** (Express + Supabase)
-over the same `/api` endpoints as the Flutter scanner app.
+The app talks to the **checkout server** (Express + Supabase) over the same
+`/api` endpoints as the Flutter scanner app. Sign-in is handled directly with
+Supabase Auth.
 
 ## Run it
 
@@ -27,6 +28,20 @@ over the same `/api` endpoints as the Flutter scanner app.
    taken by the supermarket dashboard).
 
 No `.env` is needed: the customer flow is anonymous.
+
+## Sign in / create account
+
+This app uses **Supabase Auth** (email + password) — the same project as the
+checkout server. Copy `.env.example` to `.env` and fill in the Supabase URL and
+**anon key** (never the service-role key — it ships to the browser):
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+You sign in (or create an account) before scanning. Enabling the **Email**
+provider with "Confirm email" unticked gives instant dev signups.
 
 ## Scanning on devices
 
