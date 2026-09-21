@@ -50,6 +50,19 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
   const [scanOpen, setScanOpen] = useState(false)
   const [qrBusy, setQrBusy] = useState(false)
 
+  // "New checkout" gating: require a store so sales reach the right dashboard.
+  const openNewCheckout = () => {
+    setCreateError(null)
+    if (!currentStore) {
+      // No store linked yet — route the operator into the store-binding flow
+      // (QR scan / pick) so the checkout lands on a real store, not the
+      // invisible Demo default.
+      setScanOpen(true)
+      return
+    }
+    setModalOpen(true)
+  }
+
   const load = useCallback(async () => {
     setError(null)
     try {
@@ -167,7 +180,7 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
                 Selling at <span className="font-semibold text-slate-900">{currentStore.name}</span>
               </>
             ) : (
-              <>Sales go to the default store — pick your supermarket</>
+              <>Not linked to a store — scan its QR code or pick it</>
             )}
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
@@ -224,7 +237,7 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
                 <p className="mt-3 text-sm text-slate-500">
                   {currentStore
                     ? `No open checks at ${currentStore.name}. Tap "New checkout" to start scanning.`
-                    : 'Pick your supermarket above, then tap "New checkout" to start scanning.'}
+                    : 'Link this kiosk to a store first (scan its QR code), then start a checkout.'}
                 </p>
               </div>
             ) : (
@@ -259,14 +272,11 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
 
       <div className="sticky bottom-0 border-t border-slate-200 bg-white p-4">
         <button
-          onClick={() => {
-            setCreateError(null)
-            setModalOpen(true)
-          }}
+          onClick={openNewCheckout}
           className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-teal-700"
         >
           <Plus className="h-5 w-5" />
-          New checkout
+          {currentStore ? 'New checkout' : 'Link store & start checkout'}
         </button>
       </div>
 

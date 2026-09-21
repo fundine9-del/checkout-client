@@ -34,6 +34,7 @@ export function CheckoutPage({ order, onBack, onPaid }: CheckoutPageProps) {
   }
 
   const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0)
+  const linkedStore = Boolean(order.store_id)
 
   return (
     <div className="mx-auto flex min-h-screen max-w-2xl flex-col bg-slate-50">
@@ -83,16 +84,26 @@ export function CheckoutPage({ order, onBack, onPaid }: CheckoutPageProps) {
             {error}
           </div>
         )}
+
+        {!linkedStore && (
+          <div className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
+            <p className="font-semibold">This checkout isn't linked to a store.</p>
+            <p className="mt-1">
+              Its payment wouldn't appear in any dashboard. Go back, scan the store's QR code (or
+              pick it on Home), and start a new checkout.
+            </p>
+          </div>
+        )}
       </main>
 
       <div className="sticky bottom-0 border-t border-slate-200 bg-white p-4">
         <button
           onClick={() => void pay()}
-          disabled={paying}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-teal-700 disabled:opacity-60"
+          disabled={paying || !linkedStore}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-teal-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           <Banknote className="h-5 w-5" />
-          {paying ? 'Processing…' : `Pay ${formatMoney(order.total)}`}
+          {paying ? 'Processing…' : linkedStore ? `Pay ${formatMoney(order.total)}` : 'Link a store to pay'}
         </button>
       </div>
     </div>
