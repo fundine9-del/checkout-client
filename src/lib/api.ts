@@ -1,6 +1,8 @@
 import type { Order, OrderWithItems, Receipt, Store } from './types'
 
-const BASE = '/api'
+// API base. In dev, Vite can proxy `/api` to the server (see vite.config.ts);
+// in production builds VITE_API_URL points straight at the deployed server.
+const BASE = import.meta.env.VITE_API_URL ?? 'https://checkout-production-bbfe.up.railway.app/api'
 
 export class ApiError extends Error {
   status: number
@@ -29,7 +31,7 @@ async function req<T>(path: string, options: RequestOptions = {}): Promise<T> {
   } catch {
     throw new ApiError(
       0,
-      'Could not reach the checkout server. Is it running on http://localhost:3000?',
+      'Could not reach the checkout server (https://checkout-production-bbfe.up.railway.app).',
     )
   }
 
