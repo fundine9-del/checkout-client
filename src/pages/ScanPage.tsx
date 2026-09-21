@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Check, ScanLine, VideoOff } from 'lucide-react'
+import { Check, Keyboard, ScanLine, VideoOff } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatMoney } from '../lib/format'
 import { barcodeDetectorSupported } from '../lib/barcode'
@@ -12,19 +12,25 @@ interface ScanPageProps {
 }
 
 type CameraState = 'idle' | 'starting' | 'on' | 'unavailable'
+type InputMode = 'camera' | 'manual'
 
 export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
   const [order, setOrder] = useState<OrderWithItems | null>(initial)
   const [busy, setBusy] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
   const [manual, setManual] = useState('')
+  const [mode, setMode] = useState<InputMode>(() =>
+    barcodeDetectorSupported ? 'camera' : 'manual',
+  )
   const [cameraState, setCameraState] = useState<CameraState>(
     barcodeDetectorSupported ? 'idle' : 'unavailable',
   )
 
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const detectorRef = useRef<{ detect(source: CanvasImageSource): Promise<{ rawValue: string }[]> } | null>(null)
+  const detectorRef = useRef<{
+    detect(source: CanvasImageSource): Promise<{ rawValue: string }[]>
+  } | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const rafRef = useRef(0)
   const cooldownRef = useRef(0)
@@ -36,8 +42,8 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
   }, [])
 
   /**
-   * Adds a scanned barcode to the order. Guarded by processingRef so a burst
-   * of camera detections (or Enter presses) can't double-add.
+   * Adds a scanned/typed barcode to the order. Guarded by processingRef so a
+   * burst of camera detections (or Enter presses) can't double-add.
    */
   const addBarcode = useCallback(
     async (raw: string) => {
@@ -78,9 +84,12 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
     }
   }, [orderId])
 
-  // Camera scanning loop (Chromium only; everything else uses manual entry).
+  // Camera scanning loop (Chromium only). Runs only while "Camera" mode is
+  // active — switching to "Type code" stops the stream to save the camera.
   useEffect(() => {
-    if (!barcodeDetectorSupported) return undefined
+    // cameraState already starts as 'unavailable' when BarcodeDetector is
+    // unsupported, so nothing to set here when camera mode is off.
+    if (!barcodeDetectorSupported || mode !== 'camera') return undefined
 
     let active = true
 
@@ -154,11 +163,12 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-  }, [addBarcode])
+  }, [mode, addBarcode])
 
   const itemCount = order?.items.reduce((sum, i) => sum + i.quantity, 0) ?? 0
-  const canScan = barcodeDetectorSupported && (cameraState === 'on' || cameraState === 'starting')
   const total = order?.total ?? 0
+  const showCamera =
+    mode === 'camera' && (cameraState === 'on' || cameraState === 'starting')
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-950">
@@ -172,8 +182,31 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
         </button>
       </header>
 
+      {/* Mode toggle: camera scan or type the code */}
+      <div className="px-4 pb-3">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-white/10 p-1">
+          <button
+            onClick={() => setMode('camera')}
+            disabled={!barcodeDetectorSupported}
+            className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition disabled:opacity-30 ${
+              mode === 'camera' ? 'bg-teal-600 text-white' : 'text-white/70'
+            }`}
+          >
+            <ScanLine className="h-4 w-4" /> Camera
+          </button>
+          <button
+            onClick={() => setMode('manual')}
+            className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition ${
+              mode === 'manual' ? 'bg-teal-600 text-white' : 'text-white/70'
+            }`}
+          >
+            <Keyboard className="h-4 w-4" /> Type code
+          </button>
+        </div>
+      </div>
+
       <main className="flex-1">
-        {canScan ? (
+        {showCamera ? (
           <div className="relative aspect-[3/4] w-full bg-black">
             <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -183,39 +216,74 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
             <canvas ref={canvasRef} className="hidden" />
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <VideoOff className="h-12 w-12 text-white/40" />
-            <p className="mt-4 text-sm text-white/70">
-              {barcodeDetectorSupported
-                ? 'Camera unavailable on this device.'
-                : 'Camera scanning needs Chrome or Edge — use the manual entry below.'}
-            </p>
+          <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+            {mode === 'manual' ? (
+              <>
+                <Keyboard className="h-12 w-12 text-white/40" />
+                <p className="mt-4 text-sm text-white/70">
+                  Type or paste the barcode printed on the product, then press{' '}
+                  <span className="font-semibold text-teal-300">Add</span>.
+                </p>
+              </>
+            ) : (
+              <>
+                <VideoOff className="h-12 w-12 text-white/40" />
+                <p className="mt-4 text-sm text-white/70">
+                  {barcodeDetectorSupported
+                    ? 'Camera unavailable on this device.'
+                    : 'Camera scanning needs Chrome or Edge — type the code instead.'}
+                </p>
+              </>
+            )}
           </div>
         )}
 
         <div className="p-4">
-          <div className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
-            <ScanLine className="h-5 w-5 text-white/60" />
-            <input
-              value={manual}
-              onChange={(e) => setManual(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void addBarcode(manual)
-              }}
-              disabled={busy}
-              inputMode="numeric"
-              autoFocus={!barcodeDetectorSupported}
-              placeholder="Enter barcode manually"
-              className="w-full bg-transparent text-white placeholder-white/40 outline-none disabled:opacity-50"
-            />
-            <button
-              onClick={() => void addBarcode(manual)}
-              disabled={busy || manual.trim() === ''}
-              className="rounded-lg bg-teal-600 p-2 text-white hover:bg-teal-500 disabled:opacity-40"
-            >
-              <Check className="h-4 w-4" />
-            </button>
-          </div>
+          {mode === 'manual' ? (
+            <div className="rounded-xl bg-white/10 p-4">
+              <input
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void addBarcode(manual)
+                }}
+                disabled={busy}
+                inputMode="numeric"
+                autoFocus
+                placeholder="Product barcode"
+                className="w-full rounded-lg bg-white/5 px-4 py-3 text-center text-lg tracking-widest text-white placeholder-white/30 outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={() => void addBarcode(manual)}
+                disabled={busy || manual.trim() === ''}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-teal-600 px-4 py-3 text-sm font-semibold text-white hover:bg-teal-500 disabled:opacity-40"
+              >
+                <Check className="h-4 w-4" /> Add
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2">
+              <ScanLine className="h-5 w-5 text-white/60" />
+              <input
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void addBarcode(manual)
+                }}
+                disabled={busy}
+                inputMode="numeric"
+                placeholder="Enter barcode manually"
+                className="w-full bg-transparent text-white placeholder-white/40 outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={() => void addBarcode(manual)}
+                disabled={busy || manual.trim() === ''}
+                className="rounded-lg bg-teal-600 p-2 text-white hover:bg-teal-500 disabled:opacity-40"
+              >
+                <Check className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           {flash && (
             <p className="mt-3 rounded-lg bg-white/10 px-3 py-2 text-center text-sm text-white">
