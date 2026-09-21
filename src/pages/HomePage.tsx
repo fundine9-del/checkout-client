@@ -5,11 +5,13 @@ import {
   ChevronRight,
   LogOut,
   Plus,
+  QrCode,
   ReceiptText,
   RefreshCw,
   ShoppingBasket,
   X,
 } from 'lucide-react'
+import { ScanStoreModal } from '../components/ScanStoreModal'
 import { api } from '../lib/api'
 import { formatDateTime, formatMoney, shortId } from '../lib/format'
 import { getCurrentStore, getLastReceipt, setCurrentStore, type SelectedStore } from '../lib/store'
@@ -43,6 +45,10 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
   const [stores, setStores] = useState<Store[]>([])
   const [storesLoading, setStoresLoading] = useState(false)
   const [storesError, setStoresError] = useState<string | null>(null)
+
+  // QR "start at this store" flow.
+  const [scanOpen, setScanOpen] = useState(false)
+  const [qrBusy, setQrBusy] = useState(false)
 
   const load = useCallback(async () => {
     setError(null)
@@ -89,6 +95,23 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
     setPickerOpen(false)
   }
 
+  /** A scanned store QR: bind the kiosk to that store and jump into a fresh checkout. */
+  async function onStoreFromQr(store: SelectedStore) {
+    setScanOpen(false)
+    setCurrent(store)
+    setCurrentStore(store)
+    setQrBusy(true)
+    try {
+      const { order } = await api.createOrder(userName || undefined, store.id)
+      onCreated(order)
+    } catch {
+      // Order creation failed (server down?) but the store is set — the user can
+      // still tap "New checkout" on Home.
+    } finally {
+      setQrBusy(false)
+    }
+  }
+
   async function create() {
     setCreating(true)
     setCreateError(null)
@@ -132,22 +155,34 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
         </button>
       </header>
 
-      <button
-        onClick={() => void openStorePicker()}
-        className="flex w-full items-center gap-2 border-b border-slate-200 bg-white px-5 py-3 text-left hover:bg-slate-50"
-      >
-        <Building2 className="h-4 w-4 shrink-0 text-teal-600" />
-        <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
-          {currentStore ? (
-            <>
-              Selling at <span className="font-semibold text-slate-900">{currentStore.name}</span>
-            </>
-          ) : (
-            <>Sales go to the default store — pick your supermarket</>
-          )}
-        </span>
-        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
-      </button>
+      <div className="flex items-stretch border-b border-slate-200 bg-white">
+        <button
+          onClick={() => void openStorePicker()}
+          className="flex min-w-0 flex-1 items-center gap-2 px-5 py-3 text-left hover:bg-slate-50"
+        >
+          <Building2 className="h-4 w-4 shrink-0 text-teal-600" />
+          <span className="min-w-0 flex-1 truncate text-sm text-slate-700">
+            {currentStore ? (
+              <>
+                Selling at <span className="font-semibold text-slate-900">{currentStore.name}</span>
+              </>
+            ) : (
+              <>Sales go to the default store — pick your supermarket</>
+            )}
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+        </button>
+        <div className="my-2.5 w-px bg-slate-200" />
+        <button
+          onClick={() => setScanOpen(true)}
+          disabled={qrBusy}
+          title="Scan a store QR code to start a checkout there"
+          className="flex items-center gap-2 px-4 text-teal-700 transition hover:bg-teal-50 disabled:opacity-50"
+        >
+          <QrCode className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-medium">Scan QR</span>
+        </button>
+      </div>
 
       <main className="flex-1 p-5">
         {loading ? (
@@ -350,6 +385,13 @@ export function HomePage({ userName, onSignOut, onCreated, onOpen, onShowReceipt
             </div>
           </div>
         </div>
+      )}
+
+      {scanOpen && (
+        <ScanStoreModal
+          onClose={() => setScanOpen(false)}
+          onStore={(store) => void onStoreFromQr(store)}
+        />
       )}
     </div>
   )

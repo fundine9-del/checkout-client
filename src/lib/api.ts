@@ -53,6 +53,10 @@ export const api = {
     return req<{ stores: Store[] }>('/stores')
   },
 
+  fetchStore(id: string) {
+    return req<{ store: Store }>(`/stores/${id}`)
+  },
+
   createOrder(customerName?: string, storeId?: string) {
     const body: Record<string, unknown> = {}
     if (customerName && customerName.trim() !== '') {

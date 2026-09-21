@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
@@ -7,7 +7,8 @@ import { ScanPage } from './pages/ScanPage'
 import { CheckoutPage } from './pages/CheckoutPage'
 import { ReceiptPage } from './pages/ReceiptPage'
 import type { OrderWithItems, Receipt } from './lib/types'
-import { saveLastReceipt } from './lib/store'
+import { api } from './lib/api'
+import { saveLastReceipt, setCurrentStore } from './lib/store'
 
 type View =
   | { name: 'home' }
@@ -42,6 +43,37 @@ function Root() {
 function CheckoutFlow() {
   const { session, displayName, signOut } = useAuth()
   const [view, setView] = useState<View>({ name: 'home' })
+  const qrHandledRef = useRef(false)
+
+  // Deep link: the store QR links to /?store=<id>, so a phone camera scan (or
+  // a printed link) lands here with the right store selected and a checkout
+  // already started, exactly like using the in-app "Scan QR" button.
+  useEffect(() => {
+    if (qrHandledRef.current) return
+    const storeId = new URLSearchParams(window.location.search).get('store')
+    if (!storeId) return
+    qrHandledRef.current = true
+
+    const url = new URL(window.location.href)
+    url.searchParams.delete('store')
+    window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`)
+
+    void (async () => {
+      try {
+        const { store } = await api.fetchStore(storeId)
+        if (!store) return
+        setCurrentStore({ id: store.id, name: store.name })
+        const { order } = await api.createOrder(
+          displayName || session?.user.email || undefined,
+          store.id,
+        )
+        setView({ name: 'cart', orderId: order.id, initial: order })
+      } catch {
+        // Store unresolved or server unreachable — stay on Home; the store is
+        // set if lookup succeeded, and the user can tap "New checkout".
+      }
+    })()
+  }, [displayName, session])
 
   switch (view.name) {
     case 'home':
