@@ -1,4 +1,4 @@
-import type { Order, OrderWithItems, Receipt } from './types'
+import type { Order, OrderWithItems, Receipt, Store } from './types'
 
 const BASE = '/api'
 
@@ -49,11 +49,16 @@ async function req<T>(path: string, options: RequestOptions = {}): Promise<T> {
 
 /** Public checkout API — no auth needed for the customer app. */
 export const api = {
-  createOrder(customerName?: string) {
-    const body =
-      customerName && customerName.trim() !== ''
-        ? { customer_name: customerName.trim() }
-        : {}
+  fetchStores() {
+    return req<{ stores: Store[] }>('/stores')
+  },
+
+  createOrder(customerName?: string, storeId?: string) {
+    const body: Record<string, unknown> = {}
+    if (customerName && customerName.trim() !== '') {
+      body.customer_name = customerName.trim()
+    }
+    if (storeId) body.store_id = storeId
     return req<{ order: OrderWithItems }>('/orders', { method: 'POST', body })
   },
 

@@ -39,3 +39,8 @@ export interface Receipt {
   paid_at: string
   items: ReceiptLine[]
 }
+
+export interface Store {
+  id: string
+  name: string
+}
