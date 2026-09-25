@@ -107,4 +107,15 @@ export const api = {
       { method: 'POST', body: { payment_method: paymentMethod } },
     )
   },
+
+  /**
+   * Queue this receipt to a till printer by scanning its QR (token-gated — the
+   * printer's token travels with the QR payload, so no auth is needed).
+   */
+  enqueuePrintJob(printerId: string, token: string, orderId: string) {
+    return req<{ job: { id: string; status: string } }>('/print-jobs', {
+      method: 'POST',
+      body: { printer_id: printerId, token, order_id: orderId },
+    })
+  },
 }

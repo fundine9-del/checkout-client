@@ -29,3 +29,28 @@ export function parseStorePayload(raw: string): string | null {
 
   return null
 }
+
+/**
+ * The QR shown on the customer's digital receipt. The till scans it (Printers
+ * / Sales dashboard) to print that receipt on the bonded till printer.
+ * Shape: checkout-receipt:<order_id>
+ */
+export function encodeReceiptLink(orderId: string): string {
+  return `checkout-receipt:${orderId}`
+}
+
+/**
+ * Turn a scanned/typed printer QR payload into { printerId, token }.
+ * The dashboard encodes printer QRs as `checkout-printer:connect:<id>:<token>`;
+ * the token is the credential that sends this receipt to that printer's queue.
+ */
+export function parsePrinterLink(
+  raw: string,
+): { printerId: string; token: string } | null {
+  const parts = raw.trim().split(':')
+  if (parts.length !== 4 || parts[0] !== 'checkout-printer' || parts[1] !== 'connect') return null
+  const printerId = parts[2]
+  const token = parts[3]
+  if (!printerId || !token) return null
+  return { printerId, token }
+}
