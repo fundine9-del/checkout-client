@@ -35,6 +35,9 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
   const rafRef = useRef(0)
   const cooldownRef = useRef(0)
   const processingRef = useRef(false)
+  /** Last barcode handed to the cart — consecutive camera detections of the
+   *  same code are ignored so leaving the camera on a barcode can't re-add. */
+  const lastAddedRef = useRef<string | null>(null)
 
   const showFlash = useCallback((message: string) => {
     setFlash(message)
@@ -44,16 +47,24 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
   /**
    * Adds a scanned/typed barcode to the order. Guarded by processingRef so a
    * burst of camera detections (or Enter presses) can't double-add.
+   * `fromCamera` adds exactly once and then hands the customer to the cart.
    */
   const addBarcode = useCallback(
-    async (raw: string) => {
+    async (raw: string, fromCamera = false) => {
       const barcode = raw.trim()
       if (barcode === '' || processingRef.current) return
+      // Remember the attempt so a static camera frame can't re-submit it.
+      lastAddedRef.current = barcode
       processingRef.current = true
       setBusy(true)
       try {
         const { order: updated } = await api.addItem(orderId, barcode)
         setOrder(updated)
+        if (fromCamera) {
+          // One scan, one item — take the customer straight to the cart.
+          onDone(updated)
+          return
+        }
         const last = updated.items[updated.items.length - 1]
         showFlash(`Added ${last?.name ?? barcode}`)
         setManual('')
@@ -65,7 +76,7 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
         setBusy(false)
       }
     },
-    [orderId, showFlash],
+    [orderId, showFlash, onDone],
   )
 
   // Load the order whenever the scan screen opens (keeps the footer in sync).
@@ -131,7 +142,7 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
         scheduleFrame()
         return
       }
-      if (Date.now() - cooldownRef.current < 1200) {
+      if (processingRef.current || Date.now() - cooldownRef.current < 1200) {
         scheduleFrame()
         return
       }
@@ -145,7 +156,11 @@ export function ScanPage({ orderId, initial, onDone }: ScanPageProps) {
           .then((codes) => {
             if (codes && codes.length > 0) {
               cooldownRef.current = Date.now()
-              void addBarcode(codes[0].rawValue)
+              const raw = codes[0].rawValue
+              // The same barcode staying in frame must not re-add — only a
+              // different barcode adds again (re-scans happen from the cart).
+              if (raw === lastAddedRef.current) return
+              void addBarcode(raw, true)
             }
           })
           .catch(() => {
